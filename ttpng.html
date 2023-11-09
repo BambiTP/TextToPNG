@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to PNG Generator</title>
+    <style>
+        #imageContainer {
+            border: 2px solid #ccc; /* Set your desired border properties */
+            padding: 1px; /* Add some padding if needed */
+            display: inline-block; /* Prevents the container from taking the full width */
+        }
+
+        #outputImage {
+            max-width: 100%; /* Ensure the image does not exceed the container width */
+        }
+
+        #fontHelpModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #closeButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <label for="textInput">Enter Text:</label>
+    <input type="text" id="textInput">
+    
+    <label for="textSize">Text Size (px):</label>
+    <input type="number" id="textSize" value="20" style="width: 50px;">
+
+    <label for="textDecoration">Text Decoration:</label>
+    <select id="textDecoration" style="width: 100px;">
+        <option value="none">None</option>
+        <option value="underline">Underline</option>
+        <option value="overline">Overline</option>
+        <option value="line-through">Line Through</option>
+    </select>
+
+    <label for="bold">Bold:</label>
+    <input type="checkbox" id="bold">
+
+    <label for="italic">Italic:</label>
+    <input type="checkbox" id="italic">
+
+    <label for="textColor">Text Color:</label>
+    <input type="color" id="textColor" value="#000000" style="width: 50px;">
+
+    <label for="imageWidth">Image Width:</label>
+    <input type="number" id="imageWidth" value="400" style="width: 50px;">
+
+    <label for="imageHeight">Image Height:</label>
+    <input type="number" id="imageHeight" value="100" style="width: 50px;">
+
+    <label for="textX">Text X:</label>
+    <input type="number" id="textX" value="10" style="width: 50px;">
+
+    <label for="textY">Text Y:</label>
+    <input type="number" id="textY" value="20" style="width: 50px;">
+    <br>
+    <label for="fontFamily">Font :</label>
+    <input type="text" id="fontFamily" style="width: 150px;">
+
+    <button onclick="generateImage()">Generate Image</button>
+    <button onclick="openFontHelpModal()">Font Help</button>
+    <br>
+    <div id="imageContainer">
+        <img id="outputImage" alt="Generated Image">
+    </div>
+
+    <!-- Font Help Modal -->
+    <div id="overlay" onclick="closeFontHelpModal()"></div>
+    <div id="fontHelpModal">
+        <span id="closeButton" onclick="closeFontHelpModal()">X</span>
+        <p>To select a font go to https://fonts.google.com and put the name of the font in the text box</p>
+        <p>It may take a few seconds for the font to load. (Click Generate every few seconds)</p>
+    </div>
+
+    <script>
+        function loadFont(fontFamily) {
+            var link = document.createElement('link');
+            link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(fontFamily);
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+        }
+
+        function generateImage() {
+            var textInput = document.getElementById('textInput').value;
+            var textSize = document.getElementById('textSize').value + 'px';
+            var textDecoration = document.getElementById('textDecoration').value;
+            var isBold = document.getElementById('bold').checked;
+            var isItalic = document.getElementById('italic').checked;
+            var textColor = document.getElementById('textColor').value;
+            var imageWidth = document.getElementById('imageWidth').value;
+            var imageHeight = document.getElementById('imageHeight').value;
+            var textX = document.getElementById('textX').value;
+            var textY = document.getElementById('textY').value;
+            var fontFamily = document.getElementById('fontFamily').value || 'Arial, sans-serif'; // Default to Arial with sans-serif fallback
+
+            loadFont(fontFamily); // Load the specified font dynamically
+
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = imageWidth;
+            canvas.height = imageHeight;
+
+            context.font = (isBold ? 'bold ' : '') + (isItalic ? 'italic ' : '') + textSize + ' ' + fontFamily;
+            context.fillStyle = textColor;
+            context.strokeStyle = textColor;
+
+            if (textDecoration !== 'none') {
+                context.lineWidth = 2;
+            }
+
+            context.fillText(textInput, textX, textY);
+
+            if (textDecoration === 'underline') {
+                context.beginPath();
+                context.moveTo(textX, parseInt(textSize, 10) + parseInt(textY, 10));
+                context.lineTo(parseInt(textSize, 10) + context.measureText(textInput).width + parseInt(textX, 10), parseInt(textSize, 10) + parseInt(textY, 10));
+                context.stroke();
+            } else if (textDecoration === 'overline') {
+                context.beginPath();
+                context.moveTo(textX, parseInt(textY, 10));
+                context.lineTo(parseInt(textSize, 10) + context.measureText(textInput).width + parseInt(textX, 10), parseInt(textY, 10));
+                context.stroke();
+            } else if (textDecoration === 'line-through') {
+                context.beginPath();
+                context.moveTo(textX, parseInt(textSize, 10) / 2 + parseInt(textY, 10));
+                context.lineTo(parseInt(textSize, 10) + context.measureText(textInput).width + parseInt(textX, 10), parseInt(textSize, 10) / 2 + parseInt(textY, 10));
+                context.stroke();
+            }
+
+            var dataURL = canvas.toDataURL('image/png');
+            document.getElementById('outputImage').src = dataURL;
+        }
+
+        // Functions for Font Help Modal
+        function openFontHelpModal() {
+            var fontHelpModal = document.getElementById('fontHelpModal');
+            var overlay = document.getElementById('overlay');
+            fontHelpModal.style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function closeFontHelpModal() {
+            var fontHelpModal = document.getElementById('fontHelpModal');
+            var overlay = document.getElementById('overlay');
+            fontHelpModal.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
